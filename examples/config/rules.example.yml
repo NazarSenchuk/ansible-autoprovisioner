@@ -1,0 +1,14 @@
+# config/rules.example.yml
+rules:
+  - name: "provision-database"
+    match:
+      groups: ["webservers"]
+    playbook: "ansible/playbooks/db.yml"
+    priority: 50
+
+daemon:
+  interval: 30
+  state_file: "state.json"
+  log_dir: "logs"
+  max_retries: 3
+  static_inventory: "inventory.ini"

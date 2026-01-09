@@ -1,0 +1,6 @@
+*.egg-info/
+dist/
+build/
+__pycache__/
+uv.lock
+.python-version

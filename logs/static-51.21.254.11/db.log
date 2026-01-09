@@ -1,0 +1,21 @@
+
+=== 2026-01-13 12:51:29.199777 START examples/ansible/playbooks/db.yml ===
+
+PLAY [Example Simple Playbook] *************************************************
+
+TASK [Gathering Facts] *********************************************************
+[WARNING]: Platform linux on host 51.21.254.11 is using the discovered Python
+interpreter at /usr/bin/python3.12, but future installation of another Python
+interpreter could change the meaning of that path. See
+https://docs.ansible.com/ansible-
+core/2.17/reference_appendices/interpreter_discovery.html for more information.
+ok: [51.21.254.11]
+
+TASK [Ping] ********************************************************************
+ok: [51.21.254.11]
+
+PLAY RECAP *********************************************************************
+51.21.254.11               : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+
+=== END rc=0 ===
