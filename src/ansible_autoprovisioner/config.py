@@ -7,7 +7,7 @@ from pathlib import Path
 
 @dataclass
 class Rule:
-    """Provisioning rule configuration."""
+
     name: str
     match: Dict[str, Dict[str, str]]
     playbook: str
@@ -57,40 +57,31 @@ class DaemonConfig:
             'static_inventory': 'inventory.ini',
             'detectors': ['static']
         }
-        
-        # Load YAML config
+
         config_path = Path(config_file)
         if config_path.exists():
             with open(config_path) as f:
                 yaml_data = yaml.safe_load(f) or {}
                 defaults.update(yaml_data.get('daemon', {}))
         
-        # Apply CLI overrides (filter out None values)
         defaults.update({k: v for k, v in overrides.items() if v is not None})
         
         return cls(config=config_file, **defaults)
     
     def validate(self):
-        """Validate configuration"""
-        # Check inventory file
         inventory = Path(self.static_inventory)
         if not inventory.exists():
             raise FileNotFoundError(f"Inventory not found: {inventory}")
         
-        # Check rules file
         rules_path = Path(self.config)
         if not rules_path.exists():
             raise FileNotFoundError(f"Rules not found: {rules_path}")
-        
-        # Create log directory
         Path(self.log_dir).mkdir(parents=True, exist_ok=True)
         
-        # Validate rules and playbooks
         for rule in self.rules:
             
             playbook_path = Path(rule.playbook)
-            
-            # Check if playbook exists (try absolute and relative paths)
+
             if not playbook_path.exists():
                 if not playbook_path.is_absolute():
                     abs_path = Path.cwd() / playbook_path

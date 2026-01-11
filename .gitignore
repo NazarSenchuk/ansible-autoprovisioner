@@ -4,3 +4,5 @@ build/
 __pycache__/
 uv.lock
 .python-version
+logs
+state.json

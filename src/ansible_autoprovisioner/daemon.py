@@ -29,22 +29,11 @@ class ProvisioningDaemon:
         logger.info(f"  • Interval: {config.interval}s")
         logger.info(f"  • Max retries: {config.max_retries}")
         self.state = StateManager(state_file=config.state_file)
-        self.detectors  = DetectorManager([StaticDetector()])
+        self.detectors  = DetectorManager([StaticDetector(config.static_inventory)])
         self.matcher = RuleMatcher(self.config.rules)
         self.executor = AnsibleExecutor(self.state , self.config.static_inventory , self.config.log_dir  )
-        # Statistics
-        self.stats = {
-            'start_time': datetime.now(),
-            'cycles': 0,
-            'instances_processed': 0,
-            'playbooks_executed': 0,
-            'successful': 0,
-            'failed': 0,
-            'retried': 0
-        }
         if self.config.ui:
             self.start_ui()
-        # Signal handling
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
     
@@ -55,7 +44,6 @@ class ProvisioningDaemon:
             if not rule.enabled:
                 continue
                 
-            # Check if playbook exists
             import os
             playbook_path = rule.playbook
             if not os.path.exists(playbook_path):
@@ -96,7 +84,6 @@ class ProvisioningDaemon:
             
         
 
-            # Check new instances  with detectors
             logger.info(f"Check new instance....")
             detected = self.detectors.detect_all()
             detected_ids = {d.instance_id for d in detected}
@@ -122,18 +109,15 @@ class ProvisioningDaemon:
                     )
 
 
-            # ORPHANED instances
             for inst in state_instances:
                 if inst.instance_id not in detected_ids:
                     if inst.overall_status != InstanceStatus.ORPHANED:
                         logger.info(f"Instance orphaned: {inst.instance_id}")
                         self.state.mark_final_status(inst.instance_id, InstanceStatus.ORPHANED)
 
-            # Provisioning new instance
             logger.info("Provisioning new instances...")
             self.executor.provision(self.state.get_instances(status=InstanceStatus.NEW))
             
-            # Provisioning failure and partially  failure instances
             logger.info("Provisioning failed instances...")
             self.executor.provision(self.state.get_instances(status=InstanceStatus.FAILED))
 
@@ -142,7 +126,6 @@ class ProvisioningDaemon:
 
 
     def start_ui(self):
-        """Start the UI server if enabled"""
         try:
             self.ui_server = UIServer(
                 daemon_ref=self,
@@ -154,7 +137,7 @@ class ProvisioningDaemon:
             logger.error(f"Error starting UI server: {e}")
             self.ui_server = None
     
-    def __cleanup(self):
+    def _cleanup(self):
         if self.ui_server:
             self.ui_server.stop()
         logger.info("Daemon stopped cleanly")

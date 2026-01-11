@@ -3,7 +3,7 @@ rules:
   - name: "provision-database"
     match:
       groups: ["webservers"]
-    playbook: "ansible/playbooks/db.yml"
+    playbook: "examples/ansible/playbooks/db.yml"
     priority: 50
 
 daemon:
@@ -12,3 +12,4 @@ daemon:
   log_dir: "logs"
   max_retries: 3
   static_inventory: "inventory.ini"
+  ui: true
