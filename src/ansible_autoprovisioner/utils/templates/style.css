@@ -1,52 +1,56 @@
 body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: #f8f9fa;
+    font-family: Arial, sans-serif;
     margin: 0;
-    padding: 20px;
+    padding: 0;
+    background: #f8f9fa;
+    color: #333;
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: auto;
+    padding: 20px;
 }
 
 .header {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 25px;
-    border-radius: 10px;
-    margin-bottom: 25px;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    display: flex;
     gap: 20px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
 .stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    flex: 1;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
 }
 
 .stat-value {
     font-size: 24px;
     font-weight: bold;
-    color: #3498db;
 }
 
 .table-container {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .table-title {
-    padding: 20px;
-    margin: 0;
+    margin-bottom: 10px;
 }
 
 table {
@@ -54,60 +58,97 @@ table {
     border-collapse: collapse;
 }
 
-th {
-    background: #2c3e50;
-    color: white;
-    padding: 15px;
+table th, table td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
     text-align: left;
 }
 
-td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-}
-
-tr:hover {
-    background: #f8f9fa;
-}
-
-.loading {
-    text-align: center;
-    padding: 30px;
-    color: #777;
-}
-
 .status-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
     font-size: 12px;
-    font-weight: 600;
 }
 
-.status-new { background: #e3f2fd; color: #1976d2; }
-.status-provisioning { background: #fff3e0; color: #f57c00; }
-.status-provisioned { background: #e8f5e9; color: #388e3c; }
-.status-failed { background: #ffebee; color: #d32f2f; }
-.status-partial_failure { background: #fff8e1; color: #ffa000; }
-.status-orphaned { background: #f5f5f5; color: #616161; }
-
+.status-provisioning { background: #3498db; }
+.status-provisioned  { background: #2ecc71; }
+.status-failed       { background: #e74c3c; }
+.status-partial_failure { background: #f39c12; }
+.status-orphaned { background: #c3d1ec; }
 .btn {
-    padding: 6px 12px;
+    padding: 4px 10px;
+    margin: 0 2px;
+    cursor: pointer;
     border: none;
     border-radius: 4px;
-    cursor: pointer;
-}
-
-.btn-primary {
     background: #3498db;
-    color: white;
+    color: #fff;
 }
 
-.btn-primary:hover {
-    background: #2980b9;
-}
+.btn:hover { background: #2980b9; }
 
 .last-updated {
-    text-align: center;
     margin-top: 20px;
-    color: #7f8c8d;
+    font-size: 14px;
+}
+
+/* LOADING */
+.loading {
+    text-align: center;
+    font-style: italic;
+    color: #888;
+}
+
+/* LOG VIEWER */
+.log-viewer {
+    position: fixed;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    background: #111;
+    border: 1px solid #444;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+}
+.detector-options {
+    background: #111;
+    color: #0f0;
+    padding: 6px;
+    margin: 4px 0;
+    font-size: 12px;
+    border-radius: 4px;
+    max-height: 120px;
+    overflow: auto;
+}
+
+.log-viewer.hidden { display: none; }
+
+.log-header {
+    padding: 10px;
+    background: #222;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.log-header button {
+    background: #c0392b;
+    border: none;
+    color: #fff;
+    padding: 2px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+#log-content {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+    color: #0f0;
+    font-family: monospace;
+    background: #111;
 }

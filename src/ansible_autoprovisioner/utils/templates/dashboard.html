@@ -124,15 +124,34 @@ function updateUI(instances, stats, config) {
     document.getElementById('stat-successful').textContent = stats.successful || 0;
     document.getElementById('stat-failed').textContent = stats.failed || 0;
 
+    /* DAEMON INFO */
     document.getElementById('daemon-info').innerHTML = `
-        <div>Interval: <strong>${stats.interval || 0}s</strong></div>
+        <div>Interval: <strong>${config.interval}s</strong></div>
+        <div>Max retries: <strong>${config.max_retries}</strong></div>
+        <div>State file: <code>${config.state_file || 'state.json'}</code></div>
     `;
+
+    /* CONFIG INFO */
+    const detectorsHtml = (config.detectors || [])
+        .map(d =>
+            `<div>
+                <strong>${d.name}</strong>
+                <pre class="detector-options">${JSON.stringify(d.options, null, 2)}</pre>
+            </div>`
+        ).join('');
 
     document.getElementById('config-info').innerHTML = `
         <div>Rules: <strong>${config.rules_count}</strong></div>
-        <div>Inventory: <code>${config.inventory}</code></div>
+        <div>Detectors: <strong>${config.detectors?.length || 0}</strong></div>
+        <div>Log directory: <code>${config.log_dir}</code></div>
+        <hr>
+        ${detectorsHtml || '<em>No detectors configured</em>'}
     `;
 
+    renderInstances(instances);
+}
+
+function renderInstances(instances) {
     const tbody = document.getElementById('instances-body');
 
     if (!instances.length) {
@@ -169,8 +188,7 @@ function updateUI(instances, stats, config) {
             <td>${i.playbooks?.length || 0}</td>
             <td>${i.updated_at ? new Date(i.updated_at).toLocaleString() : 'N/A'}</td>
             <td>${retryBtn} ${logsBtn}</td>
-        </tr>
-        `;
+        </tr>`;
     }).join('');
 }
 

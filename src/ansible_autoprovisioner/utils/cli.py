@@ -1,4 +1,3 @@
-# src/ansible_autoprovisioner/utils/cli.py
 
 import argparse
 

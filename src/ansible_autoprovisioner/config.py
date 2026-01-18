@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import yaml
 import os
 from dataclasses import dataclass, field
@@ -22,20 +21,32 @@ class Rule:
         )
 
 @dataclass
+class DetectorConfig:
+    name: str
+    options: {}
+    @classmethod
+    def from_dict(cls, name , cfg):
+        if not isinstance(cfg , dict):
+            raise ValueError(f"Detector {name}  must be a  mapping ")
+        return cls(name , cfg )
+        
+
+@dataclass
 class DaemonConfig:
     
     config: str
     ui: bool = True
-    static_inventory: str = "inventory.ini"
     interval: int = 30
     state_file: str = "state.json"
-    log_dir: str = "logs"
+    log_dir: str = "/tmp/ansible-autoprovisioner/logs/"
     max_retries: int = 3
-    detectors: List[str] = field(default_factory=lambda: ["static"])
+    detectors: List[DetectorConfig] = field(default_factory=lambda: [DetectorConfig(name = "static" ,options = {"inventory" :"inventory.ini"} )])
     rules: List[Rule] = field(default_factory=list, init=False, repr=False)
     
     def __post_init__(self):
         self._load_rules()
+        self._load_detectors()
+
     
     def _load_rules(self):
         config_path = Path(self.config)
@@ -46,6 +57,19 @@ class DaemonConfig:
                     Rule.from_dict(rule_data) 
                     for rule_data in yaml_data.get('rules', [])
                 ]
+
+    def _load_detectors(self):
+        config_path = Path(self.config)
+        if not config_path.exists():
+            return
+
+        with open(config_path) as f:
+            yaml_data = yaml.safe_load(f) or {}
+
+        self.detectors = [
+            DetectorConfig.from_dict(name, cfg)
+            for name, cfg in yaml_data.get("detectors", {}).items()
+        ]
     
     @classmethod
     def load(cls, config_file: str, **overrides) -> 'DaemonConfig':        
@@ -53,8 +77,6 @@ class DaemonConfig:
             'interval': 30,
             'state_file': 'state.json',
             'log_dir': 'logs',
-            'max_retries': 3,
-            'static_inventory': 'inventory.ini',
             'detectors': ['static']
         }
 
@@ -69,10 +91,7 @@ class DaemonConfig:
         return cls(config=config_file, **defaults)
     
     def validate(self):
-        inventory = Path(self.static_inventory)
-        if not inventory.exists():
-            raise FileNotFoundError(f"Inventory not found: {inventory}")
-        
+       
         rules_path = Path(self.config)
         if not rules_path.exists():
             raise FileNotFoundError(f"Rules not found: {rules_path}")
@@ -93,6 +112,5 @@ class DaemonConfig:
                     print(f"Warning: Playbook not found: {rule.playbook}")
         
         print(f"✓ Configuration loaded successfully")
-        print(f"  • {len(self.rules)} rules")
-        print(f"  • Inventory: {self.static_inventory}")
-        print(f"  • Interval: {self.interval}s")
+        print(f"  {len(self.rules)} rules")
+        print(f"  Interval: {self.interval}s")

@@ -1,4 +1,3 @@
-# src/ansible_autoprovisioner/detectors/base.py
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
@@ -13,7 +12,6 @@ class DetectedInstance:
     vars: Dict[str, str]
 
 class BaseDetector(ABC):
-    """Abstract base class for all instance detectors"""
     
     @abstractmethod
     def detect(self) -> List[DetectedInstance]:

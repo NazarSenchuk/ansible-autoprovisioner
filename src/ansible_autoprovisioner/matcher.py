@@ -19,13 +19,12 @@ class RuleMatcher:
     def _match_rule(self, rule: Rule, inst: DetectedInstance) -> bool:
         match = rule.match or {}
 
-        # Match groups
+        
         groups = match.get("groups")
         if groups:
             if not any(g in inst.groups for g in groups):
                 return False
 
-        # Match vars/tags
         vars_match = match.get("vars")
         if vars_match:
             for k, v in vars_match.items():

@@ -1,4 +1,3 @@
-# src/ansible_autoprovisioner/main.py
 
 import sys
 import logging
@@ -18,7 +17,6 @@ def main() -> int:
     try:
         config = DaemonConfig.load(
             config_file=args.config,
-            static_inventory=args.inventory,
             state_file=args.state_file,
             log_dir=args.log_dir,
             interval=args.interval,

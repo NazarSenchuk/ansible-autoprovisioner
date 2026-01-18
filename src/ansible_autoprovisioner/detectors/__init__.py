@@ -1,15 +1,14 @@
-# src/ansible_autoprovisioner/detectors/__init__.py
-"""
-Detectors package for discovering instances from various sources.
-"""
-
 from .base import BaseDetector, DetectedInstance
-from .static import StaticDetector
 from .manager import DetectorManager
+from .registry import DetectorRegistry
+from .static import StaticDetector
+from .aws import AWSDetector
+DetectorRegistry.register("static", StaticDetector)
+DetectorRegistry.register("aws", AWSDetector)
 
 __all__ = [
-    'BaseDetector',
-    'DetectedInstance',
-    'StaticDetector',
-    'DetectorManager'
+    "BaseDetector",
+    "DetectedInstance",
+    "DetectorManager",
+    "DetectorRegistry",
 ]

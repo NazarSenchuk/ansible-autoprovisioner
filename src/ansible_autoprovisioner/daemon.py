@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import signal
 import time
@@ -8,7 +7,7 @@ from typing import Optional
 from ansible_autoprovisioner.detectors.base import DetectedInstance
 from ansible_autoprovisioner.config import DaemonConfig
 from ansible_autoprovisioner.state import StateManager, InstanceStatus, PlaybookResult, PlaybookStatus
-from ansible_autoprovisioner.detectors import StaticDetector, DetectorManager
+from ansible_autoprovisioner.detectors import  DetectorManager
 from ansible_autoprovisioner.matcher import RuleMatcher
 from ansible_autoprovisioner.executor import AnsibleExecutor
 from ansible_autoprovisioner.utils.ui import UIServer
@@ -23,22 +22,20 @@ class ProvisioningDaemon:
         logger.info(f"Starting Daemon")
 
         logger.info(f"Initializing ProvisioningDaemon")
-        logger.info(f"  • State file: {config.state_file}")
-        logger.info(f"  • Log directory: {config.log_dir}")
-        logger.info(f"  • Inventory: {config.static_inventory}")
-        logger.info(f"  • Interval: {config.interval}s")
-        logger.info(f"  • Max retries: {config.max_retries}")
+        logger.info(f"   State file: {config.state_file}")
+        logger.info(f"   Log directory: {config.log_dir}")
+        logger.info(f"   Interval: {config.interval}s")
+        logger.info(f"   Max retries: {config.max_retries}")
         self.state = StateManager(state_file=config.state_file)
-        self.detectors  = DetectorManager([StaticDetector(config.static_inventory)])
+        self.detectors  = DetectorManager(config.detectors)
         self.matcher = RuleMatcher(self.config.rules)
-        self.executor = AnsibleExecutor(self.state , self.config.static_inventory , self.config.log_dir  )
+        self.executor = AnsibleExecutor(self.state , self.config.log_dir  )
         if self.config.ui:
             self.start_ui()
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
     
     def _validate_playbooks(self):
-        """Validate that all referenced playbooks exist"""
         logger.debug("Validating playbooks...")
         for rule in self.matcher.rules:
             if not rule.enabled:
@@ -47,7 +44,6 @@ class ProvisioningDaemon:
             import os
             playbook_path = rule.playbook
             if not os.path.exists(playbook_path):
-                # Try relative to current directory
                 if not os.path.isabs(playbook_path):
                     import os
                     cwd = os.getcwd()
@@ -138,6 +134,8 @@ class ProvisioningDaemon:
             self.ui_server = None
     
     def _cleanup(self):
+        self.state.mark_all_provisioning_failed()
+
         if self.ui_server:
             self.ui_server.stop()
         logger.info("Daemon stopped cleanly")

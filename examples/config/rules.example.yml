@@ -1,15 +1,20 @@
-# config/rules.example.yml
+
 rules:
   - name: "provision-database"
     match:
       groups: ["webservers"]
     playbook: "examples/ansible/playbooks/db.yml"
-    priority: 50
+
+detectors:
+  static:
+    inventory: "examples/inventory.ini"
+  aws:
+    region:  eu-north-1
+
 
 daemon:
   interval: 30
   state_file: "state.json"
   log_dir: "logs"
   max_retries: 3
-  static_inventory: "inventory.ini"
   ui: true

@@ -15,9 +15,9 @@ authors = [
 ]
 
 dependencies = [
+  "ansible>=8.7.0",
   "PyYAML",
   "requests",
-  "ansible-core"
 ]
 
 classifiers = [

@@ -1,4 +1,3 @@
-# daemon/state_manager.py
 import json
 import os
 import time
@@ -119,10 +118,6 @@ class StateManager:
 
             os.replace(tmp_file, self.state_file)
 
-    # ------------------------
-    # Instance operations
-    # ------------------------
-
     def detect_instance(self, instance_id: str, ip: str, groups=None, tags=None,playbooks=None):
         with self._lock:
             inst = self._instances.get(instance_id)
@@ -159,10 +154,6 @@ class StateManager:
             inst.updated_at = datetime.utcnow()
             self.save_state()
 
-    # ------------------------
-    # Playbook operations
-    # ------------------------
-
     def start_playbook(self, instance_id: str, name: str, file: str):
         with self._lock:
             inst = self._instances[instance_id]
@@ -171,7 +162,6 @@ class StateManager:
             result = inst.playbook_results.get(name)
 
             if result is None:
-                # first run
                 result = PlaybookResult(
                     name=name,
                     file=file,
@@ -181,7 +171,6 @@ class StateManager:
                 )
                 inst.playbook_results[name] = result
             else:
-                # retry
                 result.retry_count += 1
                 result.status = PlaybookStatus.RUNNING
                 result.started_at = now
@@ -218,9 +207,6 @@ class StateManager:
 
             self.save_state()
 
-    # ------------------------
-    # Helpers
-    # ------------------------
 
     def get_instances(self, status=None):
         instances = list(self._instances.values())
@@ -229,6 +215,13 @@ class StateManager:
             return instances
 
         return [i for i in instances if i.overall_status == status]
+
+    def mark_all_provisioning_failed(self,):
+        for inst in self.get_instances(status=InstanceStatus.PROVISIONING):
+            self.mark_final_status(
+                inst.instance_id,
+                InstanceStatus.FAILED,
+            )
 
 
     def _serialize_instance(self, inst: InstanceState) -> Dict[str, Any]:

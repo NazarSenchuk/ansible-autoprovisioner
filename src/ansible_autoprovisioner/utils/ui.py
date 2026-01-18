@@ -102,11 +102,20 @@ class UIRequestHandler(BaseHTTPRequestHandler):
 
         self.send_json({
             "rules_count": len(cfg.rules),
-            "state_file": cfg.state_file,
-            "inventory": cfg.static_inventory,
             "interval": cfg.interval,
+            "state_file": cfg.state_file,
+            "log_dir": cfg.log_dir,
             "max_retries": cfg.max_retries,
+            "ui": cfg.ui,
+            "detectors": [
+                {
+                    "name": d.name,
+                    "options": d.options,
+                }
+                for d in cfg.detectors
+            ],
         })
+
 
     def serve_instance_logs(self):
         parts = self.path.split("/")
