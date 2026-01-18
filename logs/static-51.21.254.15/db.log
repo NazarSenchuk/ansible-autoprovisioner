@@ -12,3 +12,17 @@ PLAY RECAP *********************************************************************
 
 
 === END rc=0 ===
+
+=== 2026-01-18 11:50:41.233823 START examples/ansible/playbooks/db.yml ===
+[WARNING]: Unable to parse 51.21.254.15, as an inventory source
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+
+PLAY [Example Simple Playbook] *************************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+
+
+=== END rc=0 ===

@@ -12,16 +12,18 @@ An intelligent automation system that dynamically detects infrastructure changes
 - **Orphan Detection**: Identifies instances that are no longer present in inventory
 - **Comprehensive Logging**: Detailed execution logs for troubleshooting
 
+![UI](./ui.png)
+
+~[UI](./ui.png)
 ## Quick Start
 
 ### Installation
 
-```bash
-
-# Install dependencies
+  
+# Install dependencies 
+```bash 
 pip install ansible-autoprovisioner
-
-
+```
 ### Basic Configuration
 
 1. **Create rules configuration** (`config.yaml`):
