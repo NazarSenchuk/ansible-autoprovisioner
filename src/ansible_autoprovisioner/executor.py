@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime
 from ansible_autoprovisioner.state import InstanceStatus, PlaybookStatus
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -83,17 +84,14 @@ class AnsibleExecutor:
     def _run_playbook(self, instance, playbook: str, log_dir: Path) -> int:
         log_file = log_dir / f"{Path(playbook).stem}.log"
 
-        inventory = f"{instance.ip_address},"
+        inventory_path = self._write_temp_inventory(instance)
 
         cmd = [
             "ansible-playbook",
             playbook,
-            "-i", inventory,
-            "-u", "ubuntu",
-            "--ssh-common-args", "-o StrictHostKeyChecking=no",
+            "-i", str(inventory_path),
         ]
 
-        logger.error("ANSIBLE CMD: %r", cmd)
         with open(log_file, "a") as lf:
             lf.write(f"\n=== {datetime.utcnow()} START {playbook} ===\n")
 
@@ -104,10 +102,42 @@ class AnsibleExecutor:
                 text=True,
             )
 
+            output = []
             for line in process.stdout:
                 lf.write(line)
+                output.append(line)
 
             rc = process.wait()
             lf.write(f"\n=== END rc={rc} ===\n")
 
+        if any("no hosts matched" in l.lower() for l in output):
+            logger.error("No hosts matched for %s", instance.instance_id)
+            rc = 2
+
+        inventory_path.unlink(missing_ok=True)
+
         return rc
+
+    def _write_temp_inventory(self, instance) -> Path:
+        tmp = tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".ini",
+            prefix="ansible-inventory-",
+            delete=False,
+        )
+
+        groups = instance.groups or ["all"]
+
+        for group in groups:
+            tmp.write(f"[{group}]\n")
+            tmp.write(f"{instance.ip_address}\n\n")
+
+        tmp.write("[all:vars]\n")
+        tmp.write("ansible_user=ubuntu\n")
+        tmp.write("ansible_ssh_common_args='-o StrictHostKeyChecking=no'\n")
+        tmp.write("ansible_python_interpreter=/usr/bin/python3\n")
+
+        tmp.flush()
+        tmp.close()
+
+        return Path(tmp.name)

@@ -16,6 +16,7 @@ class InstanceStatus(str, Enum):
     PARTIAL = "partial_failure"
     FAILED = "failed"
     RETRYING = "retrying"
+    SKIPPED = "skipped"
     ORPHANED = "orphaned"
 
 
@@ -24,7 +25,6 @@ class PlaybookStatus(str, Enum):
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
-    SKIPPED = "skipped"
     TIMEOUT = "timeout"
 
 
@@ -136,6 +136,8 @@ class StateManager:
                 )
                 self._instances[instance_id] = inst
 
+            if inst.playbooks == []:
+                inst.overall_status = InstanceStatus.SKIPPED 
             self.save_state()
             return inst
 

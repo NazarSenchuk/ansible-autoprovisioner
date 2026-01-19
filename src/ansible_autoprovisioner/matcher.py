@@ -12,6 +12,7 @@ class RuleMatcher:
 
         for rule in self.rules:
             if self._match_rule(rule, inst):
+            
                 playbooks.append(rule.playbook)
 
         return playbooks

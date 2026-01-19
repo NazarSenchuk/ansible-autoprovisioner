@@ -39,7 +39,8 @@ class AWSDetector(BaseDetector):
 
         for reservation in response.get("Reservations", []):
             for inst in reservation.get("Instances", []):
-                ip = inst.get("PrivateIpAddress") or inst.get("PublicIpAddress")
+
+                ip =inst.get("PublicIpAddress") or inst.get("PrivateIpAddress")
                 if not ip:
                     continue
 

@@ -110,7 +110,7 @@ class ProvisioningDaemon:
                     if inst.overall_status != InstanceStatus.ORPHANED:
                         logger.info(f"Instance orphaned: {inst.instance_id}")
                         self.state.mark_final_status(inst.instance_id, InstanceStatus.ORPHANED)
-
+                    
             logger.info("Provisioning new instances...")
             self.executor.provision(self.state.get_instances(status=InstanceStatus.NEW))
             

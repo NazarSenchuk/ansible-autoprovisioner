@@ -74,6 +74,7 @@ table th, table td {
 
 .status-provisioning { background: #3498db; }
 .status-provisioned  { background: #2ecc71; }
+.status-skipped{ background: #a2e4f9; }
 .status-failed       { background: #e74c3c; }
 .status-partial_failure { background: #f39c12; }
 .status-orphaned { background: #c3d1ec; }

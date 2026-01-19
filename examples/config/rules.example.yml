@@ -2,19 +2,19 @@
 rules:
   - name: "provision-database"
     match:
-      groups: ["webservers"]
+      vars:
+        aws_region: "us-east-1"
     playbook: "examples/ansible/playbooks/db.yml"
 
 detectors:
   static:
     inventory: "examples/inventory.ini"
   aws:
-    region:  eu-north-1
+    region:  us-east-1
 
 
 daemon:
   interval: 30
   state_file: "state.json"
-  log_dir: "logs"
   max_retries: 3
   ui: true
