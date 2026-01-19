@@ -1,0 +1,20 @@
+
+rules:
+  - name: "provision-database"
+    match:
+      vars:
+        aws_region: "us-east-1"
+    playbook: "examples/ansible/playbooks/db.yml"
+
+detectors:
+  static:
+    inventory: "examples/inventory.ini"
+  aws:
+    region:  us-east-1
+
+
+daemon:
+  interval: 30
+  state_file: "state.json"
+  max_retries: 3
+  ui: true

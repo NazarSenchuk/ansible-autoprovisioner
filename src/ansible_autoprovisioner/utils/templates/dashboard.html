@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ansible AutoProvisioner</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>Ansible AutoProvisioner</h1>
+        <p>Automated infrastructure provisioning daemon with real-time monitoring</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3><i class="fas fa-server"></i> Instances</h3>
+            <div class="stat-value" id="stat-instances">0</div>
+        </div>
+        <div class="stat-card">
+            <h3><i class="fas fa-check-circle"></i> Successful</h3>
+            <div class="stat-value" id="stat-successful">0</div>
+        </div>
+        <div class="stat-card">
+            <h3><i class="fas fa-times-circle"></i> Failed</h3>
+            <div class="stat-value" id="stat-failed">0</div>
+        </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3><i class="fas fa-info-circle"></i> Daemon Info</h3>
+            <div id="daemon-info">Loading...</div>
+        </div>
+        <div class="stat-card">
+            <h3><i class="fas fa-cogs"></i> Configuration</h3>
+            <div id="config-info">Loading...</div>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-container">
+        <h3 class="table-title"><i class="fas fa-list"></i> Managed Instances</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>Instance ID</th>
+                <th>IP Address</th>
+                <th>Status</th>
+                <th>Groups</th>
+                <th>Playbooks</th>
+                <th>Last Updated</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="instances-body">
+            <tr>
+                <td colspan="7" class="loading">Loading instances...</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="last-updated">
+        Last updated: <span id="update-time">Never</span> |
+        Auto-refresh:
+        <input type="checkbox" id="auto-refresh" checked>
+        |
+        Interval:
+        <select id="refresh-interval">
+            <option value="5000">5 sec</option>
+            <option value="10000" selected>10 sec</option>
+            <option value="30000">30 sec</option>
+            <option value="60000">1 min</option>
+        </select>
+        <button onclick="manualRefresh()" class="btn btn-primary">
+            <i class="fas fa-redo"></i> Refresh
+        </button>
+    </div>
+
+</div>
+
+<!-- LOG VIEWER MODAL -->
+<div id="log-viewer" class="log-viewer hidden">
+    <div class="log-header">
+        <span id="log-title"></span>
+        <button onclick="closeLogs()">✖</button>
+    </div>
+    <pre id="log-content">Loading...</pre>
+</div>
+
+<script>
+let refreshInterval = 10000;
+let refreshTimer = null;
+
+async function fetchData() {
+    try {
+        const [instances, stats, config] = await Promise.all([
+            fetch('/api/instances').then(r => r.json()),
+            fetch('/api/stats').then(r => r.json()),
+            fetch('/api/config').then(r => r.json())
+        ]);
+
+        updateUI(instances, stats, config);
+        document.getElementById('update-time').textContent =
+            new Date().toLocaleTimeString();
+
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function updateUI(instances, stats, config) {
+    document.getElementById('stat-instances').textContent = stats.instances || 0;
+    document.getElementById('stat-successful').textContent = stats.successful || 0;
+    document.getElementById('stat-failed').textContent = stats.failed || 0;
+
+    /* DAEMON INFO */
+    document.getElementById('daemon-info').innerHTML = `
+        <div>Interval: <strong>${config.interval}s</strong></div>
+        <div>Max retries: <strong>${config.max_retries}</strong></div>
+        <div>State file: <code>${config.state_file || 'state.json'}</code></div>
+    `;
+
+    /* CONFIG INFO */
+    const detectorsHtml = (config.detectors || [])
+        .map(d =>
+            `<div>
+                <strong>${d.name}</strong>
+                <pre class="detector-options">${JSON.stringify(d.options, null, 2)}</pre>
+            </div>`
+        ).join('');
+
+    document.getElementById('config-info').innerHTML = `
+        <div>Rules: <strong>${config.rules_count}</strong></div>
+        <div>Detectors: <strong>${config.detectors?.length || 0}</strong></div>
+        <div>Log directory: <code>${config.log_dir}</code></div>
+        <hr>
+        ${detectorsHtml || '<em>No detectors configured</em>'}
+    `;
+
+    renderInstances(instances);
+}
+
+function renderInstances(instances) {
+    const tbody = document.getElementById('instances-body');
+
+    if (!instances.length) {
+        tbody.innerHTML =
+            `<tr><td colspan="7" class="loading">No instances</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = instances.map(i => {
+        const retryBtn =
+            (i.overall_status === 'failed' || i.overall_status === 'partial_failure')
+                ? `<button class="btn btn-primary"
+                     onclick="retryInstance('${i.instance_id}')">
+                     Retry</button>`
+                : '';
+
+        const logsBtn = `
+            <button class="btn"
+                    onclick="showLogs('${i.instance_id}')">
+              <i class="fas fa-file-alt"></i> Logs
+            </button>
+        `;
+
+        return `
+        <tr>
+            <td><strong>${i.instance_id}</strong></td>
+            <td><code>${i.ip_address || 'N/A'}</code></td>
+            <td>
+              <span class="status-badge status-${i.overall_status}">
+                ${i.overall_status.toUpperCase()}
+              </span>
+            </td>
+            <td>${(i.groups || []).join(', ')}</td>
+            <td>${i.playbooks?.length || 0}</td>
+            <td>${i.updated_at ? new Date(i.updated_at).toLocaleString() : 'N/A'}</td>
+            <td>${retryBtn} ${logsBtn}</td>
+        </tr>`;
+    }).join('');
+}
+
+function retryInstance(id) {
+    fetch(`/api/instance/${id}/retry`, {method: 'POST'})
+        .then(() => fetchData());
+}
+
+// LOG VIEWER FUNCTIONS
+async function showLogs(instanceId) {
+    const res = await fetch(`/api/instance/${instanceId}/logs`);
+    const data = await res.json();
+
+    if (!data.logs.length) {
+        alert("No logs");
+        return;
+    }
+
+    loadLog(instanceId, data.logs[0]);
+}
+
+async function loadLog(instanceId, logName) {
+    document.getElementById('log-title').textContent =
+        `${instanceId} / ${logName}`;
+    document.getElementById('log-viewer').classList.remove('hidden');
+
+    const text = await fetch(
+        `/api/instance/${instanceId}/logs/${logName}`
+    ).then(r => r.text());
+
+    document.getElementById('log-content').textContent = text;
+}
+
+function closeLogs() {
+    document.getElementById('log-viewer').classList.add('hidden');
+}
+
+function manualRefresh() {
+    fetchData();
+}
+
+function startTimer() {
+    if (document.getElementById('auto-refresh').checked) {
+        refreshTimer = setTimeout(() => {
+            fetchData();
+            startTimer();
+        }, refreshInterval);
+    }
+}
+
+document.getElementById('refresh-interval').onchange = e => {
+    refreshInterval = parseInt(e.target.value);
+    clearTimeout(refreshTimer);
+    startTimer();
+};
+
+fetchData();
+startTimer();
+</script>
+
+</body>
+</html>

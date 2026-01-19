@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ansible-autoprovisioner"
+version = "0.1.0"
+description = "Automatic Ansible provisioning daemon"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+
+authors = [
+  { name = "Nazar Senchuk" }
+]
+
+dependencies = [
+  "ansible>=8.7.0",
+  "PyYAML",
+  "requests",
+]
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+
+[project.scripts]
+ansible-autoprovisioner = "ansible_autoprovisioner.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
