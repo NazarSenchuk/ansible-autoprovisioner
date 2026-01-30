@@ -14,7 +14,6 @@ class DetectorManager:
                     d.name,
                     e,
                 )
-
     def detect_all(self):
         instances = {}
         for detector in self.detectors:
@@ -23,7 +22,4 @@ class DetectorManager:
                     instances[inst.instance_id] = inst
             except Exception:
                 logging.exception("Detector %s failed during detect()", detector)
-
         return list(instances.values())
-
-

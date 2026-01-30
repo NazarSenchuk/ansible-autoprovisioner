@@ -6,10 +6,8 @@ class AWSDetector(BaseDetector):
     def __init__(self, region):
         self.region = region
         logger.info("Initializing AWS Detector")
-
         self._require_boto3()
         self._require_credentials()
-
     def _require_boto3(self):
         try:
             import boto3
@@ -17,7 +15,6 @@ class AWSDetector(BaseDetector):
             raise RuntimeError(
                 "AWSDetector requires boto3. Install with: pip install boto3"
             ) from e
-
     def _require_credentials(self):
         import boto3
         try:
@@ -29,29 +26,23 @@ class AWSDetector(BaseDetector):
             ) from e
     def detect(self) -> List[DetectedInstance]:
         import boto3
-
         ec2 = boto3.client("ec2", region_name=self.region)
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["running"]}]
         )
-
         instances = []
-
         for reservation in response.get("Reservations", []):
             for inst in reservation.get("Instances", []):
-
                 ip =inst.get("PublicIpAddress") or inst.get("PrivateIpAddress")
                 if not ip:
                     continue
-
                 tags = {t["Key"]: t["Value"] for t in inst.get("Tags", [])}
-
                 instances.append(
                     DetectedInstance(
                         instance_id=f"aws-{inst['InstanceId']}",
                         ip_address=ip,
-                        groups=list(tags.values()),
-                        vars={
+                        detector="aws",
+                        tags={
                             **tags,
                             "aws_instance_id": inst["InstanceId"],
                             "aws_region": self.region,
@@ -59,5 +50,4 @@ class AWSDetector(BaseDetector):
                         },
                     )
                 )
-
         return instances

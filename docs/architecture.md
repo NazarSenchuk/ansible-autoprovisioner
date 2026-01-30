@@ -1,135 +1,81 @@
-## Component Details
+# Architecture Documentation
+
+## 🏗️ System Overview
+
+Ansible AutoProvisioner is a state-driven automation daemon designed for infrastructure lifecycle management. It acts as an autonomous agent that bridges the gap between infrastructure deployment and configuration management.
+
+### The "Loop of Truth"
+The core of the system is the **Reconciliation Loop**. In every cycle (defined by `interval`), the system performs three critical phases:
+1. **Detection Phase**: What actually exists right now?
+2. **Matching Phase**: What *should* be running on what exists?
+3. **Execution Phase**: Make the reality match the desired state.
+
+## 🧱 Component Architecture
 
 ### 1. Detector System (`detectors/`)
+Discovers infrastructure nodes.
+- **Static Detector**: Watches a standard Ansible `inventory.ini` or YAML file.
+- **AWS Detector**: Polls the EC2 API for instances matching specific tags or regions.
+- **Manager**: Deduplicates instances across multiple detectors and provides a unified "Detected" list.
 
-**Purpose**: Discovers instances from various sources.
+### 2. State Management (`state.py`)
+The "Brain" of the system.
+- **Persistence**: Saves state to `state.json` atomically.
+- **Status Lifecycle**:
+  - `PENDING`: Ready to be provisioned (new or retry-queued).
+  - `RUNNING`: Handled by an Ansible worker.
+  - `SUCCESS`: Goal achieved.
+  - `ERROR`: Logic failure or max retries hit.
+  - `ORPHANED`: Host vanished from source but still in state.
+- **Thread Safety**: Uses file-level and object-level locking to prevent race conditions during concurrent execution.
 
-**Components**:
-- `BaseDetector` (abstract class): Defines the detector interface
-- `StaticDetector`: Reads instances from Ansible inventory files
-- `DetectorManager`: Coordinates multiple detectors
+### 3. Rule Matching (`matcher.py`)
+The "Policy" engine.
+- Matches `DetectedInstance` attributes (tags, groups, variables) against rule criteria.
+- Returns an ordered list of playbook tasks for the instance to perform.
 
-**Workflow**:
-1. Parses Ansible inventory files
-2. Extracts host information (IP, groups, variables)
-3. Creates `DetectedInstance` objects with unique instance IDs
-4. Returns deduplicated list of instances
+### 4. Execution Engine (`executor.py`)
+The "Hands" of the system.
+- Uses `ansible-runner` (or direct subprocess) to execute playbooks.
+- **Isolation**: Each instance gets its own worker thread and log directory.
+- **Telemetry**: Captures real-time output and streams it to `.log` files.
 
-### 2. Rule Matcher (`matcher.py`)
+### 5. Notification System (`notifications/`)
+The "Voice" of the system.
+- **Standardized Interface**: Allows pluggable notifiers (Slack, Telegram, etc.).
+- **Deduplication**: Tracks the `notified` status to ensure you only get one alert per terminal status.
 
-**Purpose**: Matches detected instances against provisioning rules.
+## 🔄 Data Flow Diagram
 
-**Matching Criteria**:
-- Host groups (e.g., `["webservers", "production"]`)
-- Host variables (e.g., `{"environment": "production"}`)
+```mermaid
+graph TD
+    subgraph Discovery
+    A[AWS API] --> D[Detector Manager]
+    B[Inventory File] --> D
+    end
 
-**Behavior**:
-- Evaluates each rule against each instance
-- Returns list of playbooks to execute for matched instances
-- Supports multiple matching rules per instance
+    subgraph Logic
+    D -- Detected List --> E[State Manager]
+    E -- Previous State Reference --> F[Rule Matcher]
+    F -- Task List --> G[Daemon Controller]
+    end
 
-### 3. State Manager (`state.py`)
+    subgraph Execution
+    G -- Prioritize PENDING --> H[Ansible Executor]
+    G -- Retry ERROR --> H
+    H -- Success/Fail --> E
+    H -- Logs --> I[Filesystem]
+    end
 
-**Purpose**: Tracks provisioning state to ensure idempotency.
-
-**Key Features**:
-- Persistent JSON-based state storage
-- Thread-safe operations with locking
-- Tracks instance status (NEW, PROVISIONING, PROVISIONED, FAILED, etc.)
-- Manages playbook execution history
-- Orphan detection (instances no longer in inventory)
-
-**State Transitions**:
-```
-NEW → PROVISIONING → PROVISIONED (success)
-                 → FAILED (failure)
-                 → PARTIAL (partial success)
-```
-
-### 4. Ansible Executor (`executor.py`)
-
-**Purpose**: Executes Ansible playbooks with proper error handling.
-
-**Features**:
-- Concurrent execution with ThreadPoolExecutor
-- Comprehensive logging to file
-- Retry logic with configurable limits
-- Real-time output capture
-- Error propagation and handling
-
-**Execution Flow**:
-1. Submits instances to thread pool
-2. Runs playbooks sequentially for each instance
-3. Captures stdout/stderr to log files
-4. Updates state based on execution results
-5. Stops execution on first failure (per instance)
-
-### 5. Daemon Service (`daemon.py`)
-
-**Purpose**: Provides continuous monitoring and provisioning.
-
-**Operation Loop**:
-```
-while running:
-    1. Detect instances from inventory
-    2. Update state with new/removed instances
-    3. Match instances against rules
-    4. Execute provisioning for:
-        - NEW instances
-        - FAILED instances (retry)
-    5. Sleep for configured interval
+    subgraph Alerting
+    E -- Terminal State --> J[Notification Manager]
+    J --> K[Slack/Telegram]
+    end
 ```
 
-**Signal Handling**: Graceful shutdown on SIGINT/SIGTERM
+## �️ Design Principles
 
-### 6. Configuration System (`config.py`)
-
-**Purpose**: Manages configuration loading and validation.
-
-**Features**:
-- YAML configuration file support
-- Command-line argument integration
-- Configuration validation
-- Default value management
-
-## Data Flow
-
-```
-1. Detection Phase
-   Inventory File → StaticDetector → DetectedInstance objects
-
-2. Matching Phase
-   DetectedInstance + Rules → RuleMatcher → List[playbooks]
-
-3. State Update Phase
-   DetectedInstance + Playbooks → StateManager → Updated State
-
-4. Execution Phase
-   Instance + Playbooks → AnsibleExecutor → Playbook Execution
-
-5. State Finalization
-   Execution Results → StateManager → Final Status
-```
-
-## Design Principles
-
-### 1. Idempotency
-- State tracking prevents duplicate executions
-- Playbook results are persisted and considered in retry decisions
-- Instance status determines provisioning eligibility
-
-### 2. Extensibility
-- Detector system designed for pluggable implementations
-- Rule system can be extended with new matching criteria
-- State manager supports custom serialization
-
-### 3. Observability
-- Comprehensive logging at all levels
-- Detailed execution logs stored per instance
-- State file provides audit trail
-
-### 4. Reliability
-- Thread-safe state operations
-- Transactional state updates
-- Graceful error handling
-- Configurable retry mechanisms
+- **Idempotency**: The system ensures playbooks are only run when necessary and tracks history to avoid infinite loops.
+- **Crash Consistency**: Persistent state ensures that if the process dies, it resumes exactly where it stopped.
+- **Scalability**: Thread-pooled execution allows handling hundreds of instances concurrently without blocking the main monitoring loop.
+- **Flexibility**: Decoupling detectors from executors allows the system to easily add new infrastructure sources (GCP, Azure, etc.).

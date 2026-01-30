@@ -5,7 +5,6 @@ from .static import StaticDetector
 from .aws import AWSDetector
 DetectorRegistry.register("static", StaticDetector)
 DetectorRegistry.register("aws", AWSDetector)
-
 __all__ = [
     "BaseDetector",
     "DetectedInstance",
