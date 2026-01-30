@@ -4,34 +4,38 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime
 from ansible_autoprovisioner.state import InstanceStatus, PlaybookStatus
+from ansible_autoprovisioner.config import DaemonConfig
 import tempfile
 
 logger = logging.getLogger(__name__)
 
 
 class AnsibleExecutor:
-    def __init__(self, state, log_dir: str, max_workers: int = 4):
+    def __init__(self, state, config: DaemonConfig , max_workers: int  = 4):
         self.state = state
-        self.log_dir = Path(log_dir)
         self.pool = ThreadPoolExecutor(max_workers=max_workers)
+        self.config = config
 
     def provision(self, instances: list):
         if not instances:
             return
 
-        futures = []
         for inst in instances:
             if inst.overall_status == InstanceStatus.PROVISIONING:
                 continue
 
             self.state.mark_provisioning(inst.instance_id)
-            futures.append(self.pool.submit(self._run_instance, inst))
+            future = self.pool.submit(self._run_instance, inst)
+            future.add_done_callback(self._handle_error)
 
-        for future in as_completed(futures):
+    def _handle_error(self, future):
+        try:
             future.result()
+        except Exception as e:
+            logger.error(f"Provisioning thread crashed: {e}", exc_info=True)
 
-    def _run_instance(self, instance):
-        instance_log_dir = self.log_dir / instance.instance_id
+    def _run_instance(self, instance  ):
+        instance_log_dir = Path(self.config.log_dir) / instance.instance_id
         instance_log_dir.mkdir(parents=True, exist_ok=True)
 
         for playbook in instance.playbooks:
@@ -45,7 +49,7 @@ class AnsibleExecutor:
                 file=playbook,
             )
 
-            if playbook_state.retry_count > 3:
+            if playbook_state.retry_count > self.config.max_retries:
                 logger.error(
                     f"Playbook {playbook} exceeded retry limit on {instance.instance_id}"
                 )
@@ -55,7 +59,7 @@ class AnsibleExecutor:
                 )
                 return
 
-            rc = self._run_playbook(instance, playbook, instance_log_dir)
+            rc = self._run_playbook(instance, playbook)
 
             if rc != 0:
                 self.state.finish_playbook(
@@ -81,8 +85,8 @@ class AnsibleExecutor:
             InstanceStatus.PROVISIONED,
         )
 
-    def _run_playbook(self, instance, playbook: str, log_dir: Path) -> int:
-        log_file = log_dir / f"{Path(playbook).stem}.log"
+    def _run_playbook(self, instance, playbook: str) -> int:
+        log_file =Path(self.config.log_dir) / instance.instance_id / f"{Path(playbook).stem}.log"
 
         inventory_path = self._write_temp_inventory(instance)
 

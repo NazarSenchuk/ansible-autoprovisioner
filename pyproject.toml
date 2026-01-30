@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ansible-autoprovisioner"
-version = "0.1.0"
+version = "0.2.2"
 description = "Automatic Ansible provisioning daemon"
 readme = "README.md"
 license = "MIT"

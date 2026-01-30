@@ -1,16 +1,57 @@
-
 rules:
-  - name: "provision-database"
+  - name: "provision-authorized_keys"
     match:
       vars:
         aws_region: "us-east-1"
-    playbook: "examples/ansible/playbooks/db.yml"
+    playbook: "examples/ansible/playbooks/keys.yml"
+  - name: "provision-nginx"
+    match:
+      vars:
+        aws_region: "us-east-1"
+    playbook: "examples/ansible/playbooks/nginx.yml"
+
+    
 
 detectors:
   static:
     inventory: "examples/inventory.ini"
   aws:
     region:  us-east-1
+
+
+groups:
+  backend:
+    jump_host:
+      instance:  specific instance id 
+      or
+      vars:    get one instnace from this matched vars
+    key: ./ec2.pem
+    match:
+      aws_region: "us-east-1"
+      app: "frontend"
+    rules:
+      - name: "provision-authorized_keys"
+        vars:
+
+        playbook: "examples/ansible/playbooks/keys.yml"
+      - name: "provision-nginx"
+        vars:
+
+        playbook: "examples/ansible/playbooks/nginx.yml"
+  frontend:
+    key: ./ec2.pem
+    match:
+      aws_region: "us-east-1"
+      app: "frontend"
+    rules:
+      - name: "provision-authorized_keys"
+        vars:
+
+        playbook: "examples/ansible/playbooks/keys.yml"
+      - name: "provision-nginx"
+        vars:
+
+        playbook: "examples/ansible/playbooks/nginx.yml"
 
 
 daemon:

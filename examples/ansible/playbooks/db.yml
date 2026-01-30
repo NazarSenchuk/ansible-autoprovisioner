@@ -1,7 +1,0 @@
-- name: Example Simple Playbook
-  hosts: all
-  become: yes
-  tasks:
-
-    - name: Ping
-      ansible.builtin.ping:

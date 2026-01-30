@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class StaticDetector(BaseDetector):
     def __init__(self, inventory="inventory.ini"):
         self.inventory_path = inventory
-        logger.info("Initialization Static Detector")
+        logger.info("Initializing Static Detector")
 
         if not Path(inventory).exists():
             raise RuntimeError(f"Inventory file not found: {inventory}")

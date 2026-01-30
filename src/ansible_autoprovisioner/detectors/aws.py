@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 class AWSDetector(BaseDetector):
     def __init__(self, region):
         self.region = region
-        logger.info("Initialization AWS Detector")
+        logger.info("Initializing AWS Detector")
 
         self._require_boto3()
         self._require_credentials()

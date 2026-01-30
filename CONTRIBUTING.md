@@ -30,12 +30,17 @@ Thanks for wanting to help! Here's how to contribute:
    pytest
    
    # Format code
-   black src/ tests/
+   black src/ansible_autoprovisioner/ tests/
    ```
 
 4. **Submit a Pull Request**
 
-## How to Help
+## How to 
+
+### Create Detectors
+1. Determine what detection you need 
+2. Write detector class like AWS
+3. After testing we will add created detector and you to list of contributors
 
 ### 🐛 Report Bugs
 1. Check if the bug already exists in Issues

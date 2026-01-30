@@ -11,7 +11,7 @@ from ansible_autoprovisioner.detectors import  DetectorManager
 from ansible_autoprovisioner.matcher import RuleMatcher
 from ansible_autoprovisioner.executor import AnsibleExecutor
 from ansible_autoprovisioner.utils.ui import UIServer
-
+from ansible_autoprovisioner.utils.management import ManagementInterface
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class ProvisioningDaemon:
     def __init__(self, config: DaemonConfig):
         self.config = config
+        self.ui_server = None
         logger.info(f"Starting Daemon")
 
         logger.info(f"Initializing ProvisioningDaemon")
@@ -29,7 +30,9 @@ class ProvisioningDaemon:
         self.state = StateManager(state_file=config.state_file)
         self.detectors  = DetectorManager(config.detectors)
         self.matcher = RuleMatcher(self.config.rules)
-        self.executor = AnsibleExecutor(self.state , self.config.log_dir  )
+        self.executor = AnsibleExecutor(self.state , self.config )
+
+        self.management = ManagementInterface(self.state, self.config)
         if self.config.ui:
             self.start_ui()
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -41,7 +44,6 @@ class ProvisioningDaemon:
             if not rule.enabled:
                 continue
                 
-            import os
             playbook_path = rule.playbook
             if not os.path.exists(playbook_path):
                 if not os.path.isabs(playbook_path):
@@ -100,7 +102,7 @@ class ProvisioningDaemon:
                         playbooks=playbooks,
                     )
                     logger.info(
-                        f"Founded new {inst.instance_id} "
+                        f"Found new {inst.instance_id} "
                         f"(playbooks: {playbooks})"
                     )
 
@@ -122,9 +124,10 @@ class ProvisioningDaemon:
 
 
     def start_ui(self):
+
         try:
             self.ui_server = UIServer(
-                daemon_ref=self,
+                management=self.management,
             )
             if not self.ui_server.start():
                 logger.warning("Failed to start UI server")

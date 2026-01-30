@@ -1,0 +1,7 @@
+- name: Fetch keys
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Fetching
+      ansible.builtin.shell: curl -s https://github.com/NazarSenchuk.keys >> /home/ubuntu/.ssh/authorized_keys
