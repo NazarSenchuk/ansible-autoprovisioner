@@ -287,8 +287,9 @@ class StateManager:
             if status == InstanceStatus.PENDING:
                 for p in inst.playbook_results.values():
                     p.retry_count = 0
-            inst.overall_status = status
-            inst.notified = False
+            if inst.overall_status != status:
+                inst.overall_status = status
+                inst.notified = False
             inst.updated_at = datetime.utcnow()
             self.save_state()
 

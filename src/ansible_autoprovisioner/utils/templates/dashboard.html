@@ -5,6 +5,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ansible AutoProvisioner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
@@ -13,7 +18,7 @@
   <div class="container">
     <header class="header">
       <div class="header-content">
-        <h1><i class="fas fa-robot"></i> Ansible AutoProvisioner</h1>
+        <h1></i> Ansible AutoProvisioner</h1>
         <p class="subtitle">Automated provisioning with real-time monitoring</p>
       </div>
 
@@ -31,28 +36,28 @@
 
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-server"></i></div>
+        <div class="stat-icon primary"><i class="fas fa-server"></i></div>
         <div class="stat-content">
           <h3>Instances</h3>
           <div class="stat-value" id="stat-instances">0</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-icon success"><i class="fas fa-check-circle"></i></div>
         <div class="stat-content">
           <h3>Successful</h3>
           <div class="stat-value" id="stat-successful">0</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-icon danger"><i class="fas fa-times-circle"></i></div>
         <div class="stat-content">
           <h3>Failed</h3>
           <div class="stat-value" id="stat-failed">0</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-sync-alt"></i></div>
+        <div class="stat-icon info"><i class="fas fa-sync-alt"></i></div>
         <div class="stat-content">
           <h3>Active</h3>
           <div class="stat-value" id="stat-active">0</div>

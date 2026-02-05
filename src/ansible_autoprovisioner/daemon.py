@@ -103,9 +103,13 @@ class ProvisioningDaemon:
                 self.executor.provision(pending)
 
             failed = self.state.get_instances(status=InstanceStatus.FAILED)
-            if failed:
-                logger.info(f"Retrying {len(failed)} FAILED instances")
-                self.executor.provision(failed)
+            to_retry = [
+                i for i in failed 
+                if sum(p.retry_count for p in i.playbook_results.values()) < self.config.max_retries
+            ]
+            if to_retry:
+                logger.info(f"Retrying {len(to_retry)} FAILED instances")
+                self.executor.provision(to_retry)
 
             if self.notifier:
                 self._check_notifications()
