@@ -2,21 +2,15 @@
 
 ## 🏗️ System Overview
 
-Ansible AutoProvisioner is a state-driven automation daemon designed for infrastructure lifecycle management. It acts as an autonomous agent that bridges the gap between infrastructure deployment and configuration management.
-
-### The "Loop of Truth"
-The core of the system is the **Reconciliation Loop**. In every cycle (defined by `interval`), the system performs three critical phases:
-1. **Detection Phase**: What actually exists right now?
-2. **Matching Phase**: What *should* be running on what exists?
-3. **Execution Phase**: Make the reality match the desired state.
+Ansible AutoProvisioner is a state-driven automation daemon designed for infrastructure lifecycle management. It uses a prioritized execution model to ensure new resources are provisioned immediately while maintaining a robust retry mechanism for failures.
 
 ## 🧱 Component Architecture
 
 ### 1. Detector System (`detectors/`)
-Discovers infrastructure nodes.
-- **Static Detector**: Watches a standard Ansible `inventory.ini` or YAML file.
-- **AWS Detector**: Polls the EC2 API for instances matching specific tags or regions.
-- **Manager**: Deduplicates instances across multiple detectors and provides a unified "Detected" list.
+**Purpose**: Continuous discovery of infrastructure from multiple sources.
+- **AWS Detector**: Discovers EC2 instances via tags and metadata.
+- **Static Detector**: Parses standard Ansible inventory files.
+- **Detector Manager**: Aggregates and deduplicates results from all active detectors.
 
 ### 2. State Management (`state.py`)
 The "Brain" of the system.
@@ -29,10 +23,10 @@ The "Brain" of the system.
   - `ORPHANED`: Host vanished from source but still in state.
 - **Thread Safety**: Uses file-level and object-level locking to prevent race conditions during concurrent execution.
 
-### 3. Rule Matching (`matcher.py`)
-The "Policy" engine.
-- Matches `DetectedInstance` attributes (tags, groups, variables) against rule criteria.
-- Returns an ordered list of playbook tasks for the instance to perform.
+### 3. Rule Matcher (`matcher.py`)
+**Purpose**: Mapping detected instances to playbooks using flexible criteria.
+- Supports matching by host groups and arbitrary tags/variables.
+- Allows multiple playbooks to be assigned to a single instance.
 
 ### 4. Execution Engine (`executor.py`)
 The "Hands" of the system.

@@ -1,7 +1,7 @@
 ---
 daemon:
   interval: 10
-  max_retries: 5
+  max_retries: 2
   ui: false
 
 detectors:
@@ -14,15 +14,29 @@ rules:
 
   - name: "install-nginx"
     playbook: "./examples/ansible/playbooks/nginx.yml"
-  
-
+  - name: "create-file"
+    playbook: "./examples/ansible/playbooks/create_file.yml"
+  - name: "delete-file"
+    playbook: "./examples/ansible/playbooks/delete_file.yml"
+notifications:
+  - name: telegram
+    options:
+      token: "TELEGRAM_TOKEN"
+      chat_id: "TELEGRAM_CHAT_ID"
+      notify_on: ["error", "partial_failure", "failed"]
+      log_lines: 10 
 groups:
   production-web:
+    key: "~/.ssh/id_rsa"
     name: "test"
     match:
-      aws_region : "us-east-1"
+      aws_region: "us-east-1"
+      env: "production"
+      role: "frontend"
     rules:
       - "install-nginx"
+      - "create-file"
+      - "delete-file"
     vars:
       ansible_user: "ubuntu"
       ansible_python_interpreter: "/usr/bin/python3"

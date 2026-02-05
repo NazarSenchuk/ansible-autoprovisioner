@@ -1,14 +1,17 @@
 import sys
 import logging
+import os
 from ansible_autoprovisioner.daemon import ProvisioningDaemon
 from ansible_autoprovisioner.config import DaemonConfig
 from ansible_autoprovisioner.utils.cli import parse_arguments
 from ansible_autoprovisioner.utils.logging import setup_logging
+
+
 def main() -> int:
     args = parse_arguments()
     setup_logging(args.verbose)
     logger = logging.getLogger(__name__)
-    import os
+
     logger.info(f"Main start [PID: {os.getpid()}]")
     try:
         config = DaemonConfig.load(
@@ -35,5 +38,7 @@ def main() -> int:
     except Exception:
         logger.exception("Fatal error")
         return 1
+
+
 if __name__ == "__main__":
     sys.exit(main())

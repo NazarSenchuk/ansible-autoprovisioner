@@ -13,8 +13,7 @@ Settings that control the behavior of the daemon process itself.
 | `state_file` | Path to the persistent JSON state file. | `state.json` |
 | `log_dir` | Directory where instance-specific logs will be stored. | `./logs` |
 | `ui` | Enable the built-in monitoring dashboard. | `true` |
-| `ui_host` | Host address to bind the UI server to. | `0.0.0.0` |
-| `ui_port` | Port for the UI server. | `8080` |
+
 
 ## 🔍 Detectors (`detectors`)
 

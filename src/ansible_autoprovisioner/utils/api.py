@@ -1,10 +1,12 @@
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from ..state import StateManager, InstanceStatus
+
 from ..config import DaemonConfig
+from ..state import StateManager, InstanceStatus
 
 logger = logging.getLogger(__name__)
+
 
 class ApiInterface:
     def __init__(self, state: StateManager, config: DaemonConfig):
@@ -30,13 +32,20 @@ class ApiInterface:
         if not log_dir.exists():
             return {"success": False, "error": "No logs for instance"}
         if playbook is None:
-            logs = sorted([p.name for p in log_dir.iterdir() if p.is_file() and p.suffix == ".log"])
+            logs = sorted(
+                [p.name for p in log_dir.iterdir() if p.is_file() and p.suffix == ".log"]
+            )
             return {"success": True, "instance": instance_id, "logs": logs}
         log_file = log_dir / playbook
         if not log_file.exists():
             return {"success": False, "error": "Log not found"}
         content = log_file.read_text(errors="ignore")
-        return {"success": True, "instance": instance_id, "playbook": playbook, "content": content}
+        return {
+            "success": True,
+            "instance": instance_id,
+            "playbook": playbook,
+            "content": content
+        }
 
     def add_instance(
         self,
@@ -70,16 +79,52 @@ class ApiInterface:
             instance = self.state.get_instance(instance_id)
             if not instance:
                 return {"success": False, "error": f"Instance {instance_id} not found"}
-            if instance.overall_status not in [InstanceStatus.ERROR, InstanceStatus.SUCCESS]:
+            retryable_statuses = [
+                InstanceStatus.SUCCESS,
+                InstanceStatus.PARTIAL_FAILURE,
+                InstanceStatus.FAILED
+            ]
+            if instance.overall_status not in retryable_statuses:
                 return {
                     "success": False,
-                    "error": f"Cannot retry instance with status: {instance.overall_status.value}",
+                    "error": (
+                        f"Cannot retry instance with status: "
+                        f"{instance.overall_status.value}"
+                    ),
                 }
             self.state.mark_final_status(instance_id, InstanceStatus.PENDING)
             logger.info(f"Retry requested for instance: {instance_id}")
             return {"success": True, "instance_id": instance_id}
         except Exception as e:
             logger.error(f"Error retrying instance {instance_id}: {e}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def retry_playbook(self, instance_id: str, playbook_name: str) -> Dict[str, Any]:
+        try:
+            instance = self.state.get_instance(instance_id)
+            if not instance:
+                return {"success": False, "error": f"Instance {instance_id} not found"}
+
+            if playbook_name not in instance.playbook_results:
+                return {
+                    "success": False,
+                    "error": (
+                        f"Playbook {playbook_name} not found for "
+                        f"instance {instance_id}"
+                    )
+                }
+
+            self.state.reset_playbook(instance_id, playbook_name)
+            logger.info(
+                f"Retry requested for playbook {playbook_name} on instance: {instance_id}"
+            )
+            return {"success": True, "instance_id": instance_id, "playbook": playbook_name}
+        except Exception as e:
+            logger.error(
+                f"Error retrying playbook {playbook_name} for "
+                f"instance {instance_id}: {e}",
+                exc_info=True
+            )
             return {"success": False, "error": str(e)}
 
     def get_instance_details(self, instance_id: str) -> Dict[str, Any]:
@@ -100,7 +145,10 @@ class ApiInterface:
             if not force and instance.overall_status == InstanceStatus.RUNNING:
                 return {
                     "success": False,
-                    "error": f"Instance {instance_id} is currently running. Use force=true to delete anyway.",
+                    "error": (
+                        f"Instance {instance_id} is currently running. "
+                        f"Use force=true to delete anyway."
+                    ),
                 }
             self.state.delete_instance(instance_id)
             logger.info(f"Deleted instance: {instance_id}")
@@ -121,7 +169,7 @@ class ApiInterface:
             "total_instances": len(instances),
             "status_counts": status_counts,
             "successful": status_counts.get(InstanceStatus.SUCCESS.value, 0),
-            "failed": status_counts.get(InstanceStatus.ERROR.value, 0),
+            "failed": status_counts.get(InstanceStatus.FAILED.value, 0),
             "running": status_counts.get(InstanceStatus.RUNNING.value, 0),
             "pending": status_counts.get(InstanceStatus.PENDING.value, 0),
             "orphaned": status_counts.get(InstanceStatus.ORPHANED.value, 0),

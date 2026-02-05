@@ -1,24 +1,27 @@
 import json
 import os
-import time
 import threading
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict, field
 from enum import Enum
+from typing import Dict, List, Optional, Any
+
 
 class InstanceStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
-    ERROR = "error"
+    FAILED = "failed"
+    PARTIAL_FAILURE = "partial_failure"
     ORPHANED = "orphaned"
+
 
 class PlaybookStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
     ERROR = "error"
+
 
 @dataclass
 class PlaybookResult:
@@ -51,13 +54,16 @@ class PlaybookResult:
             name=data["name"],
             file=data["file"],
             status=PlaybookStatus(data["status"]),
-            started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
-            completed_at=datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None,
+            started_at=(datetime.fromisoformat(data["started_at"])
+                        if data.get("started_at") else None),
+            completed_at=(datetime.fromisoformat(data["completed_at"])
+                          if data.get("completed_at") else None),
             duration_sec=data.get("duration_sec"),
             log_file=data.get("log_file"),
             error=data.get("error"),
             retry_count=data.get("retry_count", 0),
         )
+
 
 @dataclass
 class GroupInfo:
@@ -85,6 +91,7 @@ class GroupInfo:
             vars=data.get("vars", {}),
             rules=data.get("rules", []),
         )
+
 
 @dataclass
 class PlaybookTask:
@@ -116,38 +123,23 @@ class PlaybookTask:
             vars=data.get("vars", {}),
         )
 
+
 @dataclass
 class InstanceState:
     instance_id: str
     ip_address: str
     detector: str = "static"
-    tags: Dict[str, str] = None
-    detected_at: datetime = None
-    last_seen_at: datetime = None
-    updated_at: datetime = None
-    groups: List[GroupInfo] = None
-    playbook_tasks: List[PlaybookTask] = None
-    playbook_results: Dict[str, PlaybookResult] = None
+    tags: Dict[str, str] = field(default_factory=dict)
+    detected_at: datetime = field(default_factory=datetime.utcnow)
+    last_seen_at: datetime = field(default_factory=datetime.utcnow)
+    updated_at: datetime = field(default_factory=datetime.utcnow)
+    groups: List[GroupInfo] = field(default_factory=list)
+    playbook_tasks: List[PlaybookTask] = field(default_factory=list)
+    playbook_results: Dict[str, PlaybookResult] = field(default_factory=dict)
     overall_status: InstanceStatus = InstanceStatus.PENDING
     current_playbook: Optional[str] = None
     last_attempt_at: Optional[datetime] = None
     notified: bool = False
-
-    def __post_init__(self):
-        if self.tags is None:
-            self.tags = {}
-        if self.groups is None:
-            self.groups = []
-        if self.playbook_tasks is None:
-            self.playbook_tasks = []
-        if self.playbook_results is None:
-            self.playbook_results = {}
-        if self.detected_at is None:
-            self.detected_at = datetime.utcnow()
-        if self.last_seen_at is None:
-            self.last_seen_at = datetime.utcnow()
-        if self.updated_at is None:
-            self.updated_at = datetime.utcnow()
 
     def to_dict(self):
         return {
@@ -166,7 +158,8 @@ class InstanceState:
             },
             "overall_status": self.overall_status.value if self.overall_status else "unknown",
             "current_playbook": self.current_playbook,
-            "last_attempt_at": self.last_attempt_at.isoformat() if self.last_attempt_at else None,
+            "last_attempt_at": (self.last_attempt_at.isoformat()
+                                if self.last_attempt_at else None),
             "notified": self.notified,
         }
 
@@ -203,6 +196,7 @@ class InstanceState:
 
         return instance
 
+
 class StateManager:
     def __init__(self, state_file: str = "state.json"):
         self.state_file = state_file
@@ -212,10 +206,7 @@ class StateManager:
 
     def load_state(self):
         with self._lock:
-            if not os.path.exists(self.state_file):
-                self._instances = {}
-                return
-            if os.path.getsize(self.state_file) == 0:
+            if not os.path.exists(self.state_file) or os.path.getsize(self.state_file) == 0:
                 self._instances = {}
                 return
             try:
@@ -227,6 +218,15 @@ class StateManager:
                 }
             except (json.JSONDecodeError, ValueError):
                 self._instances = {}
+
+    def update_instance(self, instance_id, groups, playbook_tasks):
+        with self._lock:
+            inst = self.get_instance(instance_id)
+            if inst:
+                inst.groups = groups
+                inst.playbook_tasks = playbook_tasks
+                inst.overall_status = InstanceStatus.PENDING
+                self.save_state()
 
     def save_state(self):
         with self._lock:
@@ -241,7 +241,7 @@ class StateManager:
             os.replace(tmp_file, self.state_file)
 
     def detect_instance(self, instance_id: str, ip: str, detector: str = "static",
-                   tags=None, groups=None, playbook_tasks=None):
+                        tags=None, groups=None, playbook_tasks=None):
         with self._lock:
             inst = self._instances.get(instance_id)
             if inst:
@@ -288,6 +288,39 @@ class StateManager:
                 for p in inst.playbook_results.values():
                     p.retry_count = 0
             inst.overall_status = status
+            inst.notified = False
+            inst.updated_at = datetime.utcnow()
+            self.save_state()
+
+    def reset_playbook(self, instance_id: str, playbook_name: str):
+        with self._lock:
+            inst = self._instances.get(instance_id)
+            if not inst or playbook_name not in inst.playbook_results:
+                return False
+
+            playbook = inst.playbook_results[playbook_name]
+            playbook.status = PlaybookStatus.PENDING
+            playbook.retry_count = 0
+            playbook.error = None
+            playbook.completed_at = None
+            playbook.duration_sec = None
+
+            if inst.overall_status in (InstanceStatus.SUCCESS,
+                                       InstanceStatus.PARTIAL_FAILURE,
+                                       InstanceStatus.FAILED):
+                inst.overall_status = InstanceStatus.FAILED
+
+            inst.notified = False
+            inst.updated_at = datetime.utcnow()
+            self.save_state()
+            return True
+
+    def mark_notified(self, instance_id: str):
+        with self._lock:
+            inst = self._instances.get(instance_id)
+            if not inst:
+                return
+            inst.notified = True
             inst.updated_at = datetime.utcnow()
             self.save_state()
 
@@ -320,7 +353,7 @@ class StateManager:
             return result
 
     def finish_playbook(self, instance_id: str, result: PlaybookResult,
-                       status: PlaybookStatus, error: Optional[str] = None):
+                        status: PlaybookStatus, error: Optional[str] = None):
         with self._lock:
             result.status = status
             result.completed_at = datetime.utcnow()
@@ -341,7 +374,7 @@ class StateManager:
     def mark_all_running_failed(self):
         with self._lock:
             for inst in self.get_instances(status=InstanceStatus.RUNNING):
-                self.mark_final_status(inst.instance_id, InstanceStatus.ERROR)
+                self.mark_final_status(inst.instance_id, InstanceStatus.FAILED)
 
     def get_instance(self, instance_id: str):
         with self._lock:

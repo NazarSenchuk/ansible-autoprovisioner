@@ -108,7 +108,7 @@ def test_state_edge_cases():
         
         state.mark_running("i-2")
         state.mark_all_running_failed()
-        assert state.get_instance("i-2").overall_status == InstanceStatus.ERROR
+        assert state.get_instance("i-2").overall_status == InstanceStatus.FAILED
     finally:
         if os.path.exists(state_file):
             os.remove(state_file)
@@ -121,15 +121,14 @@ def test_state_status_filtering():
             
         state = StateManager(state_file=state_file)
         state.detect_instance("i-pending", "192.168.1.1", tags={"status": "pending"})
-        state.detect_instance("i-error", "192.168.1.2", tags={"status": "error"})
+        state.detect_instance("i-failed", "192.168.1.2", tags={"status": "failed"})
         state.detect_instance("i-running", "192.168.1.3", tags={"status": "running"})
         
         state.mark_running("i-running")
-        state.mark_final_status("i-error", InstanceStatus.ERROR)
+        state.mark_final_status("i-failed", InstanceStatus.FAILED)
         
-        pending_insts = state.get_instances(status=InstanceStatus.PENDING)
-        assert len(pending_insts) == 1
-        assert pending_insts[0].instance_id == "i-pending"
+        assert len(state.get_instances(status=InstanceStatus.FAILED)) == 1
+        assert state.get_instances(status=InstanceStatus.FAILED)[0].instance_id == "i-failed"
         
         running_insts = state.get_instances(status=InstanceStatus.RUNNING)
         assert len(running_insts) == 1

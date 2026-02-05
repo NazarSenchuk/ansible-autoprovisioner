@@ -1,20 +1,26 @@
-from typing import List
-from .base import BaseDetector, DetectedInstance
 import logging
+from typing import List
+
+from .base import BaseDetector, DetectedInstance
+
 logger = logging.getLogger(__name__)
+
+
 class AWSDetector(BaseDetector):
-    def __init__(self, region):
+    def __init__(self, region: str):
         self.region = region
         logger.info("Initializing AWS Detector")
         self._require_boto3()
         self._require_credentials()
+
     def _require_boto3(self):
         try:
-            import boto3
+            import boto3  
         except ImportError as e:
             raise RuntimeError(
                 "AWSDetector requires boto3. Install with: pip install boto3"
             ) from e
+
     def _require_credentials(self):
         import boto3
         try:
@@ -24,6 +30,7 @@ class AWSDetector(BaseDetector):
             raise RuntimeError(
                 "AWS credentials not found. Configure via aws configure / env vars / IAM role"
             ) from e
+
     def detect(self) -> List[DetectedInstance]:
         import boto3
         ec2 = boto3.client("ec2", region_name=self.region)
@@ -33,7 +40,7 @@ class AWSDetector(BaseDetector):
         instances = []
         for reservation in response.get("Reservations", []):
             for inst in reservation.get("Instances", []):
-                ip =inst.get("PublicIpAddress") or inst.get("PrivateIpAddress")
+                ip = inst.get("PublicIpAddress") or inst.get("PrivateIpAddress")
                 if not ip:
                     continue
                 tags = {t["Key"]: t["Value"] for t in inst.get("Tags", [])}

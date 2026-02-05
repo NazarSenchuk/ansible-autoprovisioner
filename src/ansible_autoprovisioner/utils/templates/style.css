@@ -13,7 +13,7 @@
     --light-text-secondary: #64748b;
     --light-border: #e2e8f0;
     --light-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    
+
     /* Dark Theme */
     --dark-bg: #0f172a;
     --dark-card: #1e293b;
@@ -21,7 +21,7 @@
     --dark-text-secondary: #94a3b8;
     --dark-border: #334155;
     --dark-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-    
+
     /* Colors */
     --primary: #3b82f6;
     --success: #10b981;
@@ -482,23 +482,95 @@ tbody tr:hover {
     letter-spacing: 0.5px;
 }
 
-.status-new { background: #f3f4f6; color: #6b7280; }
-.status-provisioning { background: #dbeafe; color: #1d4ed8; }
-.status-provisioned { background: #dcfce7; color: #15803d; }
-.status-failed { background: #fee2e2; color: #dc2626; }
-.status-partial_failure { background: #fef3c7; color: #d97706; }
-.status-retrying { background: #e0e7ff; color: #4f46e5; }
-.status-skipped { background: #f5f5f5; color: #737373; }
-.status-orphaned { background: #f3e8ff; color: #7c3aed; }
+.status-new {
+    background: #f3f4f6;
+    color: #6b7280;
+}
 
-.dark-theme .status-new { background: #374151; color: #9ca3af; }
-.dark-theme .status-provisioning { background: #1e3a8a; color: #93c5fd; }
-.dark-theme .status-provisioned { background: #064e3b; color: #86efac; }
-.dark-theme .status-failed { background: #7f1d1d; color: #fca5a5; }
-.dark-theme .status-partial_failure { background: #78350f; color: #fde68a; }
-.dark-theme .status-retrying { background: #3730a3; color: #c7d2fe; }
-.dark-theme .status-skipped { background: #404040; color: #a3a3a3; }
-.dark-theme .status-orphaned { background: #5b21b6; color: #ddd6fe; }
+.status-provisioning {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.status-provisioned {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-failed {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.status-partial_failure {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.status-failed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-retrying {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+.status-skipped {
+    background: #f5f5f5;
+    color: #737373;
+}
+
+.status-orphaned {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.dark-theme .status-new {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.dark-theme .status-provisioning {
+    background: #1e3a8a;
+    color: #93c5fd;
+}
+
+.dark-theme .status-provisioned {
+    background: #064e3b;
+    color: #86efac;
+}
+
+.dark-theme .status-failed {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+.dark-theme .status-partial_failure {
+    background: #78350f;
+    color: #fde68a;
+}
+
+.dark-theme .status-failed {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+.dark-theme .status-retrying {
+    background: #3730a3;
+    color: #c7d2fe;
+}
+
+.dark-theme .status-skipped {
+    background: #404040;
+    color: #a3a3a3;
+}
+
+.dark-theme .status-orphaned {
+    background: #5b21b6;
+    color: #ddd6fe;
+}
 
 /* ===== TAGS & COUNTERS ===== */
 .group-tag {
@@ -571,19 +643,59 @@ tbody tr:hover {
     transform: translateY(-1px);
 }
 
-.btn-primary { background: var(--primary); color: white; }
-.btn-success { background: var(--success); color: white; }
-.btn-danger { background: var(--danger); color: white; }
-.btn-warning { background: var(--warning); color: white; }
-.btn-info { background: var(--info); color: white; }
-.btn-secondary { background: var(--light-text-secondary); color: white; }
-.dark-theme .btn-secondary { background: var(--dark-text-secondary); }
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
 
-.btn-primary:hover { background: #2563eb; }
-.btn-success:hover { background: #059669; }
-.btn-danger:hover { background: #dc2626; }
-.btn-warning:hover { background: #d97706; }
-.btn-info:hover { background: #7c3aed; }
+.btn-success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-warning {
+    background: var(--warning);
+    color: white;
+}
+
+.btn-info {
+    background: var(--info);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--light-text-secondary);
+    color: white;
+}
+
+.dark-theme .btn-secondary {
+    background: var(--dark-text-secondary);
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.btn-warning:hover {
+    background: #d97706;
+}
+
+.btn-info:hover {
+    background: #7c3aed;
+}
 
 /* ===== REGULAR BUTTONS ===== */
 .btn {
@@ -690,8 +802,13 @@ tbody tr:hover {
 }
 
 @keyframes fa-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* ===== MODALS ===== */
@@ -949,6 +1066,28 @@ tbody tr:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.tab-retry {
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    margin: 0 4px;
+    border-radius: 3px;
+    color: #4ec9b0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.tab-retry:hover {
+    opacity: 1;
+    background: rgba(78, 201, 176, 0.15);
+}
+
+.tab-retry i {
+    font-size: 0.8rem;
+}
+
 /* ===== LOG CONTENT ===== */
 .log-content-container {
     flex: 1;
@@ -1064,26 +1203,26 @@ tbody tr:hover {
         flex-direction: column;
         gap: 20px;
     }
-    
+
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .config-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .panel-header {
         flex-direction: column;
         gap: 15px;
         align-items: flex-start;
     }
-    
+
     .panel-actions {
         width: 100%;
         justify-content: flex-start;
     }
-    
+
     .log-viewer {
         top: 2%;
         left: 2%;
@@ -1096,11 +1235,11 @@ tbody tr:hover {
     .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .container {
         padding: 10px;
     }
-    
+
     .action-buttons {
         flex-wrap: wrap;
     }

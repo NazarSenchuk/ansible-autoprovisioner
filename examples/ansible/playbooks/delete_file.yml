@@ -1,0 +1,9 @@
+- name: Delete file
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Delete file
+      ansible.builtin.file:
+        path: /tmp/test.txt
+        state: absent
