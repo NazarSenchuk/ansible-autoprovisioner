@@ -37,10 +37,38 @@ Thanks for wanting to help! Here's how to contribute:
 
 ## How to 
 
-### Create Detectors
-1. Determine what detection you need 
-2. Write detector class like AWS
-3. After testing we will add created detector and you to list of contributors
+### 🛰️ Adding New Detectors
+
+We want to support as many cloud providers as possible (GCP, Azure, DigitalOcean, Proxmox, etc.). Adding a new one is easy:
+
+1. **Inherit from `BaseDetector`**: Create a new file in `src/ansible_autoprovisioner/detectors/`.
+   ```python
+   from .base import BaseDetector, DetectedInstance
+   
+   class MyCloudDetector(BaseDetector):
+       def __init__(self, **options):
+           self.api_key = options.get("api_key")
+
+       def detect(self) -> List[DetectedInstance]:
+           # 1. Fetch instances from your cloud API
+           # 2. Return a list of DetectedInstance objects
+           return [
+               DetectedInstance(
+                   instance_id="id-123",
+                   ip_address="1.2.3.4",
+                   detector="mycloud",
+                   tags={"role": "web", "env": "prod"}
+               )
+           ]
+   ```
+
+2. **Register your detector**: Add it to `src/ansible_autoprovisioner/detectors/__init__.py`.
+   ```python
+   from .mycloud import MyCloudDetector
+   DetectorRegistry.register("mycloud", MyCloudDetector)
+   ```
+
+3. **Update Configuration**: Ensure your new detector can be configured via `rules.yml`.
 
 ### 🐛 Report Bugs
 1. Check if the bug already exists in Issues
